@@ -107,8 +107,8 @@
       c.getContext('2d').putImageData(image, 0, 0); off = { c, image }; cache.set(canvas, off);
     }
     x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(off.c, 0, 0, w, h);
-    if (mark >= 0) { const y = (mark + .5) / image.height * h; x.strokeStyle = 'rgba(201,162,39,.55)'; x.setLineDash([2, 4]); x.beginPath(); x.moveTo(0, y); x.lineTo(w, y); x.stroke(); x.setLineDash([]); }
-    if (head >= 0) { const px = (head + .5) / image.width * w; x.fillStyle = 'rgba(201,162,39,.9)'; x.fillRect(px - 1, 0, 2, h); }
+    if (mark >= 0) { const y = (mark + .5) / image.height * h; x.strokeStyle = 'rgba(224,155,22,.7)'; x.setLineDash([2, 4]); x.beginPath(); x.moveTo(0, y); x.lineTo(w, y); x.stroke(); x.setLineDash([]); }
+    if (head >= 0) { const px = (head + .5) / image.width * w; x.fillStyle = 'rgba(224,155,22,.95)'; x.fillRect(px - 1, 0, 2, h); }
   }
 
   /** CSV com t, dx, dy (px da prévia e px nativos quando houver vídeo). */

@@ -8,7 +8,7 @@
 const $ = id => document.getElementById(id);
 const original = $('original'), result = $('result'), video = $('sourceVideo');
 const ctx = original.getContext('2d'), rctx = result.getContext('2d');
-const W = 512, H = 384, BG = '#0a1222';
+const W = 512, H = 384, BG = '#1f2226';
 
 let source = null;          // {kind:'demo'|'video', name, poster?, timing?}
 let polygon = [], drawing = false;
@@ -44,9 +44,9 @@ function invalidate() {
   stop(); processed = null; renderingMask = null; displayFrames = null; meta = null;
   view.trace = view.spec = view.slices = view.probe = null;
   setResultEnabled(false);
-  $('emptyResult').hidden = false; $('resultTag').textContent = 'SEM RESULTADO'; $('originalTag').textContent = 'DESENHE AQUI';
+  $('emptyResult').hidden = false; $('resultTag').textContent = 'sem resultado'; $('originalTag').textContent = 'desenhe aqui';
   VibraUI.state(source ? 'Pronto para configurar' : 'Aguardando vídeo', source ? 'ready' : 'idle');
-  rctx.clearRect(0, 0, W, H); $('elapsed').textContent = '—';
+  rctx.clearRect(0, 0, W, H); $('elapsed').textContent = '–';
   clearAnalysis(); updateFlow();
 }
 
@@ -66,20 +66,20 @@ function grayImage(frame, n) {
 
 /* ═══ 3. Fonte: régua virtual e arquivo ═════════════════════════ */
 function demoFrame(k, fs = 32) {
-  ox.fillStyle = '#0d1628'; ox.fillRect(0, 0, W, H);
-  ox.strokeStyle = '#18243a'; ox.lineWidth = 1;
+  ox.fillStyle = '#24272c'; ox.fillRect(0, 0, W, H);
+  ox.strokeStyle = '#2d3137'; ox.lineWidth = 1;
   for (let y = 0; y < H; y += 32) { ox.beginPath(); ox.moveTo(0, y); ox.lineTo(W, y); ox.stroke(); }
   for (let x = 0; x < W; x += 32) { ox.beginPath(); ox.moveTo(x, 0); ox.lineTo(x, H); ox.stroke(); }
-  ox.fillStyle = '#7b879c'; ox.fillRect(52, 140, 66, 110); ox.fillStyle = '#2d3b55'; ox.fillRect(62, 151, 46, 88);
+  ox.fillStyle = '#8a9099'; ox.fillRect(52, 140, 66, 110); ox.fillStyle = '#3a3e45'; ox.fillRect(62, 151, 46, 88);
   // 2,4 px na ponta livre (prévia de 512 px), 4 Hz.
   const deflect = x => 2.4 * Math.pow((x - 110) / 345, 2) * Math.sin(2 * Math.PI * 4 * k / fs);
   ox.beginPath(); ox.moveTo(110, 181);
   for (let x = 110; x <= 455; x += 5) ox.lineTo(x, 181 + deflect(x));
   for (let x = 455; x >= 110; x -= 5) ox.lineTo(x, 199 + deflect(x));
-  ox.closePath(); ox.fillStyle = '#c8d3e6'; ox.fill();
-  ox.strokeStyle = '#4b5a78';
+  ox.closePath(); ox.fillStyle = '#d4d8de'; ox.fill();
+  ox.strokeStyle = '#5a606a';
   for (let x = 130; x < 450; x += 15) { ox.beginPath(); ox.moveTo(x, 182 + deflect(x)); ox.lineTo(x, 188 + deflect(x)); ox.stroke(); }
-  ox.fillStyle = '#f1f5fc'; [200, 320, 435].forEach(x => { ox.beginPath(); ox.arc(x, 190 + deflect(x), 3, 0, Math.PI * 2); ox.fill(); });
+  ox.fillStyle = '#f7f8fa'; [200, 320, 435].forEach(x => { ox.beginPath(); ox.arc(x, 190 + deflect(x), 3, 0, Math.PI * 2); ox.fill(); });
   return ox.getImageData(0, 0, W, H);
 }
 
@@ -91,11 +91,11 @@ $('demo').onclick = () => {
   invalidate();
   $('fps').value = 32; $('slow').value = 1; $('count').value = 64; $('lo').value = 2; $('hi').value = 6; $('start').value = 0; $('gain').value = 10;
   $('confirmWrap').hidden = true; $('confirm').checked = true;
-  $('timingInfo').textContent = 'Gerada a 32 FPS · frequência conhecida 4 Hz.';
-  $('sourceInfo').textContent = 'Demonstração sintética: viga engastada a 4 Hz, deslocamento máximo de 2,4 px na prévia. Não é um ensaio real.';
+  $('timingInfo').textContent = '32 FPS · 4 Hz · 2,4 px na ponta';
+  $('sourceInfo').textContent = 'Viga engastada sintética, para conhecer o fluxo. Não é um ensaio real.';
   $('emptyOriginal').hidden = true;
   drawSource(); syncLabels(); available(); updateFlow();
-  status('Régua carregada. Contorne a viga no painel Original ou amplifique a imagem inteira.');
+  status('Régua carregada. Contorne a viga no quadro Original ou use a imagem inteira.');
 };
 
 function waitEvent(el, event, timeout = 12000) {
@@ -165,8 +165,8 @@ function polygonOverlay() {
   ctx.save(); ctx.beginPath();
   polygon.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
   if (!drawing) ctx.closePath();
-  ctx.fillStyle = 'rgba(34,211,238,.12)'; if (!drawing) ctx.fill();
-  ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.restore();
+  ctx.fillStyle = 'rgba(127,156,240,.16)'; if (!drawing) ctx.fill();
+  ctx.strokeStyle = '#7f9cf0'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.stroke(); ctx.restore();
 }
 function drawSource() {
   ctx.clearRect(0, 0, W, H); if (!source) return;
@@ -227,8 +227,8 @@ function syncLabels() {
   $('gainLabel').textContent = g + '×'; $('gainMetric').innerHTML = g + '<em>×</em>';
   $('bandMetric').innerHTML = `${fmt(+$('lo').value)}–${fmt(+$('hi').value)}<em>Hz</em>`;
   $('lambdaLabel').textContent = lam ? lam + ' px' : 'sem limite';
-  $('lambdaMetric').innerHTML = $('method').value === 'flow' && lam ? lam + '<em>px</em>' : '—';
-  $('resMetric').innerHTML = fs > 0 ? fmt(fs / T) + '<em>Hz</em>' : '—';
+  $('lambdaMetric').innerHTML = $('method').value === 'flow' && lam ? lam + '<em>px</em>' : '–';
+  $('resMetric').innerHTML = fs > 0 ? fmt(fs / T) + '<em>Hz</em>' : '–';
   VibraUI.band(+$('lo').value, +$('hi').value, fs, T);
   ['gain', 'lambda'].forEach(id => VibraUI.fill($(id)));
 }
@@ -236,8 +236,8 @@ function syncMethod() {
   const flow = $('method').value === 'flow';
   $('lambdaWrap').classList.toggle('is-off', !flow); if (!busy) $('lambda').disabled = !flow;
   $('lambdaHint').innerHTML = flow
-    ? 'Limite de Wu et al. (2012): o ganho é reduzido onde (1+α)·δ &gt; λ<sub>c</sub>/8, contendo halos e borrões. Ajustável sem reprocessar.'
-    : 'No modo de fase a atenuação é interna ao banco de filtros; λ<sub>c</sub> não se aplica.';
+    ? 'Limita o deslocamento amplificado a λ<sub>c</sub>/8 para reduzir borrões (Wu et al., 2012). Muda na hora, sem reprocessar.'
+    : 'Não se aplica ao método de fase.';
   syncLabels();
 }
 for (const id of ['lo', 'hi', 'fps', 'slow', 'count', 'size', 'start'])
@@ -250,10 +250,10 @@ function liveVisual() {
   syncLabels();
   if (processed?.motion && meta) {
     meta.requestedGain = +$('gain').value; meta.lambdaC = lambdaC();
-    $('resultTag').textContent = meta.requestedGain + '× SOLICITADO';
+    $('resultTag').textContent = 'ganho ' + meta.requestedGain + '×';
     drawFrame(frameIndex);
     clearTimeout(refreshTimer); refreshTimer = setTimeout(() => computeSlices(), 90);
-    status('Visual atualizado sem reprocessar. Compare 20×, 50× e 100×; observe ruído e tremor.', 'ok');
+    status('Atualizado sem reprocessar.', 'ok');
   } else { invalidate(); drawSource(); available(); }
 }
 $('gain').oninput = liveVisual;
@@ -304,7 +304,7 @@ $('run').onclick = async () => {
 
     displayFrames = full; const mask = makeMask(roi, n, d); renderingMask = mask;
     meta = {
-      version: '0.6.0', source: source.name, synthetic: source.kind === 'demo',
+      version: '0.7.0', source: source.name, synthetic: source.kind === 'demo',
       method: method === 'flow' ? 'experimental-classical-motion-warp' : 'experimental-complex-phase-filterbank',
       rendering: method === 'flow' ? 'warp-recorded-pixels-at-preview-resolution' : 'complete-reconstructed-crop',
       fileTiming: source.timing ? { fpsMean: source.timing.fps, nominalFps: source.timing.nominalFps, variable: source.timing.variable } : null,
@@ -318,7 +318,7 @@ $('run').onclick = async () => {
 
     worker = new Worker('worker.js?v=0.6.0');
     VibraUI.state(method === 'flow' ? 'Rastreando deslocamentos' : 'Calculando fases', 'busy');
-    status(method === 'phase' && n >= 256 ? 'Processando em alta resolução. Pode levar alguns minutos; mantenha a página aberta.' : 'Processando no aparelho. Mantenha esta página aberta.');
+    status(method === 'phase' && n >= 256 ? 'Processando em alta resolução; pode levar alguns minutos.' : 'Processando. Mantenha a página aberta.');
 
     worker.onmessage = e => {
       if (ticket !== job) return;
@@ -326,7 +326,7 @@ $('run').onclick = async () => {
       if (data.progress !== undefined) {
         const p = .2 + .8 * data.progress; $('progress').value = p;
         VibraUI.proc.update(p, method === 'flow' && data.progress >= .7 ? 'filter' : data.progress >= .95 ? 'filter' : 'track');
-        status(`${method === 'flow' ? 'Rastreando e filtrando movimento' : 'Amplificando por fase'}… ${Math.round(data.progress * 100)}%`);
+        status(`Processando… ${Math.round(data.progress * 100)}%`);
         return;
       }
       worker.terminate(); worker = null;
@@ -348,7 +348,7 @@ $('run').onclick = async () => {
 function finishRun(method, roi, d, t, fs, gain) {
   controls(false);
   $('elapsed').innerHTML = fmt(meta.seconds, 1) + '<em>s</em>';
-  $('emptyResult').hidden = true; $('resultTag').textContent = gain + '× SOLICITADO'; $('originalTag').textContent = 'REFERÊNCIA';
+  $('emptyResult').hidden = true; $('resultTag').textContent = 'ganho ' + gain + '×'; $('originalTag').textContent = 'referência';
   VibraUI.state('Resultado experimental', 'done');
   $('timeline').max = t - 1; $('timeline').value = 0; VibraUI.fill($('timeline')); frameIndex = 0;
   setResultEnabled(true);
@@ -357,9 +357,9 @@ function finishRun(method, roi, d, t, fs, gain) {
   VibraUI.proc.hide(); updateFlow();
   const downscale = Math.max(roi.w / d.w, roi.h / d.h);
   status(method === 'flow'
-    ? 'Concluído. Toque no painel amplificado para escolher o ponto de medição. Ganhos altos também ampliam ruído e tremor.'
-    : downscale > 1.5 ? 'Concluído. O recorte foi reduzido: selecione uma região menor ou use resolução maior.' : 'Concluído. Referência preservada; resultado reconstruído na resolução escolhida.', 'ok');
-  $('resultInfo').textContent = `${method === 'flow' ? 'Deslocamento clássico · pixels da prévia reposicionados' : 'Fase experimental'} · ${t} quadros · grade ${Math.round(d.w)} × ${Math.round(d.h)} px · ${fmt(meta.physicalDuration)} s físicos · Δf ${fmt(fs / t)} Hz. Início e fim do trecho podem conter artefatos.`;
+    ? 'Pronto. Toque no quadro amplificado para escolher o ponto de medição.'
+    : downscale > 1.5 ? 'Pronto. A região foi reduzida no cálculo; use uma região menor ou resolução maior.' : 'Pronto.', 'ok');
+  $('resultInfo').textContent = `${t} quadros, ${fmt(meta.physicalDuration)} s de movimento real, grade de ${Math.round(d.w)} × ${Math.round(d.h)} px. O início e o fim do trecho podem ter artefatos.`;
 }
 
 $('cancel').onclick = () => {
@@ -386,9 +386,9 @@ function guides(target) {
   const a = toScreen(view.dir === 'v' ? { x: view.probe.x, y: roi.y } : { x: roi.x, y: view.probe.y });
   const b = toScreen(view.dir === 'v' ? { x: view.probe.x, y: roi.y + roi.h } : { x: roi.x + roi.w, y: view.probe.y });
   target.save();
-  target.strokeStyle = 'rgba(201,162,39,.75)'; target.lineWidth = 1.25; target.setLineDash([5, 4]);
+  target.strokeStyle = 'rgba(224,155,22,.85)'; target.lineWidth = 1.25; target.setLineDash([5, 4]);
   target.beginPath(); target.moveTo(a.x, a.y); target.lineTo(b.x, b.y); target.stroke(); target.setLineDash([]);
-  target.strokeStyle = '#22d3ee'; target.lineWidth = 2;
+  target.strokeStyle = '#7f9cf0'; target.lineWidth = 2;
   target.beginPath(); target.arc(p.x, p.y, 7, 0, Math.PI * 2); target.stroke();
   target.beginPath(); target.moveTo(p.x - 12, p.y); target.lineTo(p.x - 4, p.y); target.moveTo(p.x + 4, p.y); target.lineTo(p.x + 12, p.y);
   target.moveTo(p.x, p.y - 12); target.lineTo(p.x, p.y - 4); target.moveTo(p.x, p.y + 4); target.lineTo(p.x, p.y + 12); target.stroke();
@@ -445,10 +445,10 @@ result.addEventListener('pointerdown', e => {
 /* ═══ 8. Análise: fatia espaço-temporal, x(t) e espectro ═══════ */
 function clearAnalysis() {
   document.querySelector('.analysis').classList.add('is-empty');
-  VibraCharts.empty($('trace'), 'Processe um vídeo para ver o deslocamento no ponto.');
-  VibraCharts.empty($('spectrum'), 'Espectro disponível após o processamento.');
+  VibraCharts.empty($('trace'), 'Sem dados');
+  VibraCharts.empty($('spectrum'), 'Sem dados');
   for (const id of ['sliceOrig', 'sliceAmp']) VibraCharts.setup($(id));
-  $('peakTag').textContent = '—'; $('sliceEnd').textContent = 'tempo →';
+  $('peakTag').textContent = '–'; $('sliceEnd').textContent = 'tempo';
 }
 
 function computeSlices() {
@@ -467,14 +467,14 @@ function computeAnalysis(keepProbe = false) {
     const axis = view.axis === 'auto' ? view.trace.dominantAxis : view.axis;
     view.spec = VibraAnalysis.spectrum(view.trace[axis], view.trace.fs);
     const peakAmp = view.spec.a[view.spec.peak], peakF = view.spec.f[view.spec.peak];
-    $('peakTag').textContent = `pico ${fmt(peakF)} Hz`;
-    $('traceInfo').textContent = `${axis === 'dy' ? 'Vertical' : 'Horizontal'} em (${fmt(view.probe.x, 0)}, ${fmt(view.probe.y, 0)}) px · amplitude ≈ ${fmt(peakAmp, 3)} px da prévia em ${fmt(peakF)} Hz. Filtrado na faixa, antes do ganho; não calibrado em mm.`;
+    $('peakTag').textContent = `pico em ${fmt(peakF)} Hz`;
+    $('traceInfo').textContent = `${axis === 'dy' ? 'Vertical' : 'Horizontal'}, no ponto (${fmt(view.probe.x, 0)}, ${fmt(view.probe.y, 0)}). Amplitude de ${fmt(peakAmp, 2)} px a ${fmt(peakF)} Hz, antes do ganho e sem calibração em mm.`;
   } else {
-    view.trace = view.spec = null; $('peakTag').textContent = 'modo fase';
-    $('traceInfo').textContent = 'O modo de fase não exporta trajetória de deslocamento. Use o método clássico para x(t) e espectro.';
+    view.trace = view.spec = null; $('peakTag').textContent = '–';
+    $('traceInfo').textContent = 'Disponível apenas no método de deslocamento.';
   }
-  $('sliceEnd').textContent = `${fmt(meta.physicalDuration)} s físicos →`;
-  $('sliceInfo').textContent = `Linha ${view.dir === 'v' ? 'vertical' : 'horizontal'} pelo ponto de medição (tracejado dourado nos painéis). Eixo horizontal: tempo; eixo vertical: posição ao longo da linha.`;
+  $('sliceEnd').textContent = `${fmt(meta.physicalDuration)} s`;
+  $('sliceInfo').textContent = `Linha ${view.dir === 'v' ? 'vertical' : 'horizontal'} tracejada nos vídeos, empilhada quadro a quadro ao longo do tempo.`;
   computeSlices();
 }
 
@@ -487,11 +487,11 @@ function paintAnalysis() {
   }
   if (view.trace) {
     const axis = view.axis === 'auto' ? view.trace.dominantAxis : view.axis;
-    VibraCharts.line($('trace'), { t: view.trace.t, y: view.trace[axis], head: frameIndex, yUnit: (axis === 'dy' ? 'dy' : 'dx') + ' · px prévia', xUnit: 's físicos' });
-    VibraCharts.bars($('spectrum'), { f: view.spec.f, a: view.spec.a, lo: meta.lowHz, hi: meta.highHz, peak: view.spec.peak, yUnit: 'amplitude · px' });
+    VibraCharts.line($('trace'), { t: view.trace.t, y: view.trace[axis], head: frameIndex, yUnit: 'px', xUnit: 's' });
+    VibraCharts.bars($('spectrum'), { f: view.spec.f, a: view.spec.a, lo: meta.lowHz, hi: meta.highHz, peak: view.spec.peak, yUnit: 'px' });
   } else {
-    VibraCharts.empty($('trace'), 'Disponível no método clássico.');
-    VibraCharts.empty($('spectrum'), 'Disponível no método clássico.');
+    VibraCharts.empty($('trace'), 'Disponível no método de deslocamento');
+    VibraCharts.empty($('spectrum'), 'Disponível no método de deslocamento');
   }
 }
 
@@ -534,10 +534,10 @@ $('export').onclick = async () => {
     for (let k = 0; k < snapshot.frames; k++) {
       if (processed !== results) throw Error('O resultado mudou durante a exportação.');
       drawFrame(k);
-      x.fillStyle = '#060b16'; x.fillRect(0, 0, 1024, 420); x.drawImage(original, 0, 36); x.drawImage(result, 512, 36);
-      x.font = '600 14px Inter, system-ui'; x.fillStyle = '#e7edf7'; x.fillText('ORIGINAL · ' + snapshot.source, 12, 24);
-      x.fillStyle = '#22d3ee'; x.fillText(`AMPLIFICADO · α ${snapshot.requestedGain}× · ${snapshot.lowHz}–${snapshot.highHz} Hz${snapshot.lambdaC ? ' · λc ' + snapshot.lambdaC + ' px' : ''}`, 524, 24);
-      x.font = '500 11px Inter, system-ui'; x.fillStyle = '#8393b2'; x.fillText('Vibra · OhmCinética · protótipo experimental, não é medição', 12, 412);
+      x.fillStyle = '#1f2226'; x.fillRect(0, 0, 1024, 420); x.drawImage(original, 0, 36); x.drawImage(result, 512, 36);
+      x.font = '500 14px "IBM Plex Sans", system-ui'; x.fillStyle = '#e6e8eb'; x.fillText('ORIGINAL · ' + snapshot.source, 12, 24);
+      x.fillStyle = '#9fb5f5'; x.fillText(`AMPLIFICADO · α ${snapshot.requestedGain}× · ${snapshot.lowHz}–${snapshot.highHz} Hz${snapshot.lambdaC ? ' · λc ' + snapshot.lambdaC + ' px' : ''}`, 524, 24);
+      x.font = '400 11px "IBM Plex Sans", system-ui'; x.fillStyle = '#9aa1aa'; x.fillText('Vibra · OhmCinética · protótipo experimental, não é medição', 12, 412);
       await new Promise(r => setTimeout(r, 1000 / snapshot.samplingFps));
     }
     rec.stop(); await done; download(new Blob(chunks, { type: mime }), 'vibra-comparacao.webm');

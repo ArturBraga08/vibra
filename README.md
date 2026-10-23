@@ -1,8 +1,12 @@
-# Vibra — protótipo experimental 0.6.0
+# Vibra — protótipo experimental 0.7.0
 
 Site: https://arturbraga08.github.io/vibra/ · equipe OhmCinética · Desafio Vibracon (HackatOhm CEFET)
 
 Aplicativo web para testar amplificação de movimento sem IA no próprio navegador. Não é um APK. A página e o worker precisam ser carregados pela rede; não há garantia de reabertura offline nesta versão. Nenhum vídeo é enviado pelo código do aplicativo.
+
+## Versão 0.7 — visual claro e mais sóbrio
+
+Tema claro (fundo cinza, painéis brancos com borda fina), tipografia IBM Plex, um único azul para ações e dados, verde só para etapas concluídas e âmbar só para os marcadores de tempo e posição. Sem brilhos, gradientes ou blocos promocionais. Textos da interface encurtados. Controles reunidos num único painel; indicador de progresso em barra simples. Os cálculos e as funções da 0.6 continuam iguais.
 
 ## Versão 0.6 — interface de inspeção (equipe OhmCinética)
 

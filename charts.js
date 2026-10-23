@@ -6,8 +6,8 @@
 
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const palette = () => ({
-    grid: 'rgba(255,255,255,.06)', axis: css('--line-2'), text: css('--dim'), label: css('--muted'),
-    data: css('--cyan'), band: 'rgba(34,211,238,.10)', peak: css('--green-hi'), head: css('--gold')
+    grid: '#eef0f3', axis: css('--line-2'), text: css('--muted'), label: css('--muted'),
+    data: css('--accent'), band: 'rgba(43,75,163,.07)', peak: css('--ok'), head: css('--marker')
   });
   const fmt = (v, d = 2) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: d, minimumFractionDigits: 0 }).format(v);
 
@@ -27,7 +27,7 @@
 
   function empty(canvas, message) {
     const { x, w, h } = setup(canvas), c = palette();
-    x.fillStyle = c.text; x.font = '500 12px Inter, system-ui, sans-serif';
+    x.fillStyle = c.text; x.font = '400 12.5px "IBM Plex Sans", system-ui, sans-serif';
     x.textAlign = 'center'; x.textBaseline = 'middle';
     x.fillText(message, w / 2, h / 2);
   }
@@ -40,7 +40,7 @@
   function frame(x, w, h, pad, xMin, xMax, yMin, yMax, xUnit, yUnit) {
     const c = palette(), X = v => pad.l + (v - xMin) / (xMax - xMin) * (w - pad.l - pad.r),
       Y = v => h - pad.b - (v - yMin) / (yMax - yMin) * (h - pad.t - pad.b);
-    x.font = '500 10.5px "JetBrains Mono", ui-monospace, monospace'; x.lineWidth = 1;
+    x.font = '400 10.5px "IBM Plex Mono", ui-monospace, monospace'; x.lineWidth = 1;
     const ys = niceStep(yMax - yMin, 4);
     x.textAlign = 'right'; x.textBaseline = 'middle';
     for (let v = Math.ceil(yMin / ys) * ys; v <= yMax + 1e-9; v += ys) {
@@ -67,12 +67,12 @@
     const { X, Y } = frame(x, w, h, pad, t[0], t[t.length - 1], -m, m, xUnit, yUnit);
     x.save(); x.beginPath(); x.rect(pad.l, pad.t, w - pad.l - pad.r, h - pad.t - pad.b); x.clip();
     const g = x.createLinearGradient(0, pad.t, 0, h - pad.b);
-    g.addColorStop(0, 'rgba(34,211,238,.18)'); g.addColorStop(.5, 'rgba(34,211,238,0)'); g.addColorStop(1, 'rgba(34,211,238,.18)');
+    g.addColorStop(0, 'rgba(43,75,163,.10)'); g.addColorStop(.5, 'rgba(43,75,163,0)'); g.addColorStop(1, 'rgba(43,75,163,.10)');
     x.beginPath(); x.moveTo(X(t[0]), Y(0));
     y.forEach((v, i) => x.lineTo(X(t[i]), Y(v)));
     x.lineTo(X(t[t.length - 1]), Y(0)); x.closePath(); x.fillStyle = g; x.fill();
     x.beginPath(); y.forEach((v, i) => i ? x.lineTo(X(t[i]), Y(v)) : x.moveTo(X(t[i]), Y(v)));
-    x.strokeStyle = c.data; x.lineWidth = 1.8; x.lineJoin = 'round'; x.stroke();
+    x.strokeStyle = c.data; x.lineWidth = 1.5; x.lineJoin = 'round'; x.stroke();
     if (head >= 0 && head < y.length) {
       x.strokeStyle = c.head; x.lineWidth = 1; x.setLineDash([3, 3]);
       x.beginPath(); x.moveTo(X(t[head]), pad.t); x.lineTo(X(t[head]), h - pad.b); x.stroke(); x.setLineDash([]);
@@ -94,7 +94,7 @@
       const top = Y(a[i]); x.fillRect(X(fr) - bw / 2, top, bw, Y(0) - top);
     });
     if (peak >= 0) {
-      x.fillStyle = c.peak; x.font = '600 11px "JetBrains Mono", monospace'; x.textBaseline = 'bottom';
+      x.fillStyle = c.peak; x.font = '500 11px "IBM Plex Mono", monospace'; x.textBaseline = 'bottom';
       const px = X(f[peak]); x.textAlign = px > w - 90 ? 'right' : 'left';
       x.fillText(fmt(f[peak], 2) + ' Hz', px + (x.textAlign === 'left' ? 6 : -6), Y(a[peak]) - 2);
     }
