@@ -17,6 +17,7 @@ let playing = false, raf = 0, frameIndex = 0;
 let processed = null;       // {motion} (clássico) ou Float32Array[] (fase)
 let renderingMask = null, displayFrames = null, videoUrl = null, meta = null;
 let regionChosen = false, filterTouched = false, showGuides = true;
+let segMode = 'manual', segCheck = null;   // trecho: 'manual' ou 'suggested' (sugestão automática)
 const view = { probe: null, dir: 'v', axis: 'auto', trace: null, spec: null, slices: null };
 
 const off = document.createElement('canvas'); off.width = W; off.height = H;
@@ -26,7 +27,32 @@ const ox = off.getContext('2d', { willReadFrequently: true });
 function status(text, tone = '') { const s = $('status'); s.textContent = text; s.className = 'status' + (tone ? ' ' + tone : ''); }
 const fmt = (v, d = 2) => VibraCharts.fmt(v, d);
 
-function available() { $('run').disabled = busy || !source || (source.kind === 'video' && !$('confirm').checked); }
+function segmentReady() { return !!segCheck?.ok && (!segCheck.gaps?.length || $('gapConfirm').checked); }
+function available() { $('run').disabled = busy || !source || (source.kind === 'video' && !$('confirm').checked) || !segmentReady(); }
+
+/* Diagnóstico do trecho analisado: limites, lacunas e modo de escolha. */
+function evaluateSegment() {
+  const box = $('segStatus'), fps = +$('fps').value, count = +$('count').value, start = +$('start').value;
+  const show = (tone, text) => { box.dataset.tone = tone; $('segText').textContent = text; };
+  const isVideo = source?.kind === 'video';
+  $('regular').hidden = $('regularHint').hidden = !(isVideo && source.timing);
+  $('gapWrap').hidden = true; segCheck = null;
+  box.dataset.mode = source?.kind === 'demo' ? 'demo' : segMode;
+  $('segMode').textContent = !source ? 'Trecho' : source.kind === 'demo' ? 'Demonstração'
+    : segMode === 'suggested' ? 'Sugestão automática, baseada na temporização do arquivo' : 'Escolha manual';
+  if (!source) return show('idle', 'Carregue um vídeo para definir o trecho.');
+  if (!(fps >= 1 && fps <= 240)) return show('error', 'Informe uma amostragem entre 1 e 240 FPS em “Aquisição e resolução”.');
+  const c = VibraProbe.analyzeSegment(isVideo ? source.timing : null, start, count, fps, isVideo ? video.duration : Infinity);
+  segCheck = c;
+  if (!c.ok) return show('error', c.reason);
+  const range = `${fmt(start)}–${fmt(c.end)} s do arquivo, ${count} quadros a ${fmt(fps)} FPS`;
+  if (source.kind === 'demo') return show('ok', `Quadros gerados a ${fmt(fps)} FPS: ${count} quadros (${fmt((count - 1) / fps)} s).`);
+  if (!c.verified) return show('warn', `${range}. A temporização do arquivo não pôde ser lida, então as lacunas não podem ser verificadas e a amostragem uniforme não está confirmada.`);
+  if (c.regular) return show('ok', `${range}. Sem lacunas neste intervalo${c.held ? `; ${c.held} amostra${c.held > 1 ? 's repetem' : ' repete'} o quadro anterior` : ''}.`);
+  const big = c.gaps.reduce((a, g) => g.seconds > a.seconds ? g : a);
+  $('gapWrap').hidden = false;
+  show('warn', `${range}. O intervalo tem ${c.gaps.length} lacuna${c.gaps.length > 1 ? 's' : ''} na gravação; a maior dura ${fmt(big.seconds)} s, a partir de ${fmt(big.from)} s. Nesses pontos o navegador repete o último quadro disponível: o tempo deixa de ser uniforme e frequência e amplitude podem sair distorcidas.`);
+}
 
 function updateFlow() {
   VibraUI.flow([!!source, !!source && (regionChosen || !!processed), !!source && (filterTouched || !!processed), !!processed]);
@@ -84,17 +110,16 @@ function demoFrame(k, fs = 32) {
 }
 
 $('demo').onclick = () => {
-  $('regular').hidden = true;
   if (videoUrl) { URL.revokeObjectURL(videoUrl); videoUrl = null; }
   video.removeAttribute('src');
   source = { kind: 'demo', name: 'Régua virtual · 4 Hz' }; polygon = []; regionChosen = false; filterTouched = false;
   invalidate();
   $('fps').value = 32; $('slow').value = 1; $('count').value = 64; $('lo').value = 2; $('hi').value = 6; $('start').value = 0; $('gain').value = 10;
-  $('confirmWrap').hidden = true; $('confirm').checked = true;
+  $('confirmWrap').hidden = true; $('confirm').checked = true; segMode = 'manual'; $('gapConfirm').checked = false;
   $('timingInfo').textContent = '32 FPS · 4 Hz · 2,4 px na ponta';
   $('sourceInfo').textContent = 'Viga engastada sintética, para conhecer o fluxo. Não é um ensaio real.';
   $('emptyOriginal').hidden = true;
-  drawSource(); syncLabels(); available(); updateFlow();
+  drawSource(); syncLabels(); evaluateSegment(); available(); updateFlow();
   status('Régua carregada. Contorne a viga no quadro Original ou use a imagem inteira.');
 };
 
@@ -118,7 +143,7 @@ function videoFrame() {
 async function loadFile(f) {
   if (!f) return;
   if (f.size > 250 * 1024 * 1024) { status('Use um vídeo de até 250 MB nesta versão.', 'error'); return; }
-  invalidate(); source = null; polygon = []; regionChosen = false; filterTouched = false; available();
+  invalidate(); source = null; polygon = []; regionChosen = false; filterTouched = false; segMode = 'manual'; $('gapConfirm').checked = false; evaluateSegment(); available();
   if (videoUrl) URL.revokeObjectURL(videoUrl);
   videoUrl = URL.createObjectURL(f);
   try {
@@ -129,13 +154,13 @@ async function loadFile(f) {
     $('fps').value = timing ? Number(timing.nominalFps.toFixed(5)) : 30; $('slow').value = 1; $('start').value = 0;
     $('confirmWrap').hidden = false; $('confirm').checked = false; $('emptyOriginal').hidden = true;
     $('sourceInfo').textContent = `${f.name} · ${video.videoWidth} × ${video.videoHeight} · ${fmt(video.duration)} s. Confira os FPS em “Aquisição e resolução”.`;
-    drawSource(); VibraUI.state('Confira a gravação', 'warn'); $('regular').hidden = !timing?.variable;
+    drawSource(); VibraUI.state('Confira a gravação', 'warn');
     $('timingInfo').textContent = timing
-      ? `Média ${timing.fps.toFixed(3)} FPS · usual ≈ ${timing.nominalFps.toFixed(3)} FPS · ${timing.samples} quadros. ${timing.variable ? 'Há irregularidades: escolha um trecho regular.' : 'Temporização aproximadamente regular.'} Câmera lenta e quadros duplicados não são detectados.`
+      ? `Média ${timing.fps.toFixed(3)} FPS · usual ≈ ${timing.nominalFps.toFixed(3)} FPS · ${timing.samples} quadros. ${timing.variable ? 'Há lacunas em alguns pontos do arquivo.' : 'Temporização aproximadamente regular.'} Câmera lenta e quadros duplicados não são detectados.`
       : 'Não foi possível ler os FPS do arquivo. Confira as propriedades; não use automaticamente os FPS da câmera.';
-    status(timing?.variable ? 'Arquivo irregular. Use “Escolher trecho regular”, confira a câmera lenta e confirme.' : 'Vídeo carregado. Confira os FPS e confirme para processar.');
+    status(timing?.variable ? 'O arquivo tem lacunas na temporização. Veja o diagnóstico em “Trecho analisado”: peça uma sugestão regular ou mantenha seu início e confirme as lacunas.' : 'Vídeo carregado. Confira os FPS e confirme para processar.');
   } catch (err) { status(err.message, 'error'); $('emptyOriginal').hidden = false; }
-  syncLabels(); available(); updateFlow();
+  syncLabels(); evaluateSegment(); available(); updateFlow();
 }
 $('file').onchange = e => loadFile(e.target.files[0]);
 $('demoQuick').onclick = () => { if (!busy) $('demo').click(); };
@@ -147,17 +172,17 @@ const drop = document.querySelector('.drop');
 drop.addEventListener('drop', e => { e.preventDefault(); if (!busy) loadFile(e.dataTransfer.files[0]); });
 
 $('regular').onclick = () => {
-  const q = source?.timing?.longestRegular; if (!q) return;
-  invalidate(); $('fps').value = source.timing.nominalFps;
-  const start = Math.ceil((q.start + .1) * 10) / 10; $('start').value = start;
-  const count = [128, 64, 32].find(c => start + (c - 1) / source.timing.nominalFps < q.end);
-  if (!count) { status('Não encontrei um trecho regular suficientemente longo.', 'error'); return; }
-  $('count').value = count;
-  $('sourceInfo').textContent = `Trecho sugerido: ${start.toFixed(2)}–${(start + (count - 1) / source.timing.nominalFps).toFixed(2)} s no arquivo. Confira o fator de câmera lenta antes de processar.`;
-  drawSource(); syncLabels(); available();
-  status('Trecho selecionado. Informe a câmera lenta (por exemplo, 10×) e a faixa de frequência física.');
+  if (busy || source?.kind !== 'video') return;
+  const fps = +$('fps').value, count = +$('count').value, current = +$('start').value;
+  const r = VibraProbe.suggestSegment(source.timing, count, fps, Number.isFinite(current) ? current : 0);
+  if (!r.ok) { status(r.reason, 'error'); return; }          // nada é alterado
+  invalidate(); drawSource();
+  $('start').value = r.start; segMode = 'suggested'; $('gapConfirm').checked = false;
+  evaluateSegment(); syncLabels(); available();
+  status(`Início sugerido: ${fmt(r.start, 3)} s. Intervalo ${fmt(r.start)}–${fmt(r.end)} s, sem lacunas, com os mesmos ${count} quadros a ${fmt(fps)} FPS. Só o início foi alterado.`, 'ok');
 };
 $('confirm').onchange = available;
+$('gapConfirm').onchange = available;
 
 /* ═══ 4. Região de interesse (contorno livre) ═══════════════════ */
 function polygonOverlay() {
@@ -241,7 +266,13 @@ function syncMethod() {
   syncLabels();
 }
 for (const id of ['lo', 'hi', 'fps', 'slow', 'count', 'size', 'start'])
-  $(id).oninput = () => { if (id === 'lo' || id === 'hi') filterTouched = true; invalidate(); drawSource(); syncLabels(); available(); };
+  $(id).oninput = () => {
+    if (id === 'lo' || id === 'hi') filterTouched = true;
+    const segChanged = id === 'start' || id === 'count' || id === 'fps';
+    if (segChanged) { segMode = 'manual'; $('gapConfirm').checked = false; }
+    invalidate(); drawSource(); syncLabels(); evaluateSegment(); available();
+    if (segChanged && source?.kind === 'video') status(segCheck?.ok ? (segCheck.gaps?.length ? 'Trecho escolhido manualmente com lacunas. Confirme em “Trecho analisado” para processar.' : 'Trecho escolhido manualmente.') : 'Trecho inválido. Veja a explicação em “Trecho analisado”.', segCheck?.ok ? '' : 'error');
+  };
 $('method').onchange = () => { filterTouched = true; invalidate(); drawSource(); syncMethod(); available(); };
 
 // Ganho e λc: no modo clássico são aplicados na exibição, sem recalcular o campo.
@@ -274,7 +305,10 @@ function validate({ fps, slow, fs, lo, hi, gain, t, start }) {
     throw Error('Use 0 < frequência mínima < máxima < metade dos FPS de captura. Confira os demais valores.');
   if (t / fs * lo < 2) throw Error(shortSegmentMessage(t, fps, slow, lo));
   if (source.kind === 'demo' && (fps !== 32 || slow !== 1)) throw Error('A demonstração usa 32 FPS e câmera lenta 1×.');
-  if (source.kind === 'video' && start + (t - 1) / fps >= video.duration) throw Error('O trecho ultrapassa o vídeo. Reduza o número de quadros ou o instante inicial.');
+  evaluateSegment();
+  if (!segCheck?.ok) throw Error(segCheck?.reason || 'Trecho inválido.');
+  if (segCheck.gaps?.length && !$('gapConfirm').checked)
+    throw Error('Este trecho tem lacunas. Marque a confirmação em “Trecho analisado” para processá-lo mesmo assim, ou peça uma sugestão de trecho regular.');
 }
 
 $('run').onclick = async () => {
@@ -286,8 +320,7 @@ $('run').onclick = async () => {
     controls(true); regionChosen = filterTouched = true; updateFlow();
     $('progress').value = 0; VibraUI.state('Preparando quadros', 'busy');
     VibraUI.proc.show({ track: method === 'flow' ? 'Rastreamento do movimento' : 'Decomposição em fase', filter: method === 'flow' ? 'Filtragem temporal' : 'Filtragem e amplificação' });
-    const timingCheck = VibraProbe.validateSegment(source.timing, start, t, fps);
-    if (!timingCheck.ok) throw Error(timingCheck.reason);
+    const seg = segCheck;
     const roi = region(), d = dimensions(roi, n), frames = [], full = [];
 
     for (let k = 0; k < t; k++) {
@@ -304,7 +337,7 @@ $('run').onclick = async () => {
 
     displayFrames = full; const mask = makeMask(roi, n, d); renderingMask = mask;
     meta = {
-      version: '0.7.0', source: source.name, synthetic: source.kind === 'demo',
+      version: '0.8.0', source: source.name, synthetic: source.kind === 'demo',
       method: method === 'flow' ? 'experimental-classical-motion-warp' : 'experimental-complex-phase-filterbank',
       rendering: method === 'flow' ? 'warp-recorded-pixels-at-preview-resolution' : 'complete-reconstructed-crop',
       fileTiming: source.timing ? { fpsMean: source.timing.fps, nominalFps: source.timing.nominalFps, variable: source.timing.variable } : null,
@@ -313,7 +346,17 @@ $('run').onclick = async () => {
       requestedGain: gain, lambdaC: method === 'flow' ? +$('lambda').value : 0,
       frames: t, physicalDuration: t / fs, resolution: n, startSeconds: start, roi, dimensions: d,
       previewScale: source.kind === 'video' ? fitScale() : 1,
-      polygon: polygon.map(p => ({ ...p })), validatedOnDevice: false
+      polygon: polygon.map(p => ({ ...p })), validatedOnDevice: false,
+      segment: {
+        choice: source.kind === 'demo' ? 'demo' : segMode === 'suggested' ? 'automatic-suggestion-from-file-timing' : 'manual',
+        startSeconds: start, endSeconds: seg.end, frames: t, samplingFps: fps,
+        temporalCheck: source.kind === 'demo' ? 'synthetic' : !seg.verified ? 'not-verified-no-timing-table' : seg.regular ? 'no-gaps-in-file-timing' : 'gaps-confirmed-by-user',
+        userConfirmedGaps: !!(seg.gaps?.length && $('gapConfirm').checked),
+        uniformSamplingValidated: !!(seg.verified && seg.regular),
+        gaps: (seg.gaps || []).map(g => ({ fromSeconds: +g.from.toFixed(4), toSeconds: +g.to.toFixed(4), seconds: +g.seconds.toFixed(4) })),
+        heldSamples: seg.held || 0,
+        sourceFrameTimes: seg.sourceTimes ? Array.from(seg.sourceTimes, v => +v.toFixed(5)) : null
+      }
     };
 
     worker = new Worker('worker.js?v=0.6.0');
@@ -360,6 +403,12 @@ function finishRun(method, roi, d, t, fs, gain) {
     ? 'Pronto. Toque no quadro amplificado para escolher o ponto de medição.'
     : downscale > 1.5 ? 'Pronto. A região foi reduzida no cálculo; use uma região menor ou resolução maior.' : 'Pronto.', 'ok');
   $('resultInfo').textContent = `${t} quadros, ${fmt(meta.physicalDuration)} s de movimento real, grade de ${Math.round(d.w)} × ${Math.round(d.h)} px. O início e o fim do trecho podem ter artefatos.`;
+  if (meta.segment.userConfirmedGaps) {
+    const g = meta.segment.gaps.length;
+    $('resultTag').textContent = 'ganho ' + gain + '×, trecho com lacunas';
+    $('resultInfo').textContent += ` Atenção: o trecho tem ${g} lacuna${g > 1 ? 's' : ''} confirmada${g > 1 ? 's' : ''} por você; a amostragem não é uniforme e frequência e amplitude podem estar distorcidas.`;
+    status('Pronto, com lacunas no trecho. Use o resultado só para inspeção visual; a temporização não é uniforme.', 'warn');
+  }
 }
 
 $('cancel').onclick = () => {
@@ -552,4 +601,4 @@ $('export').onclick = async () => {
 /* ═══ Inicialização ═════════════════════════════════════════════ */
 // Aparelhos de toque usam grade mais leve; computadores, 256 px.
 if (window.matchMedia('(pointer:coarse)').matches) $('size').value = '128';
-syncMethod(); clearAnalysis(); updateFlow();
+syncMethod(); clearAnalysis(); evaluateSegment(); updateFlow();

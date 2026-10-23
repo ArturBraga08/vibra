@@ -120,10 +120,13 @@
       '# faixa ' + meta.lowHz + '-' + meta.highHz + ' Hz; fs fisico=' + meta.assumedPhysicalSamplingFps + ' Hz; camera lenta=' + meta.slowMotionFactor + 'x',
       '# dx/dy ja filtrados na faixa e suavizados espacialmente; NAO sao deslocamento bruto. Campo Euleriano: posicao fixa, nao ponto material.',
       '# px_nativo = px_previa / ' + s.toFixed(6) + ' (escala de ajuste da previa)',
-      'k,t_fisico_s,t_arquivo_s,dx_px_previa,dy_px_previa,dx_px_nativo,dy_px_nativo'
+      '# trecho: ' + (meta.segment?.choice || 'manual') + '; verificacao temporal: ' + (meta.segment?.temporalCheck || 'n/d') + '; amostragem uniforme validada: ' + (meta.segment?.uniformSamplingValidated ? 'sim' : 'nao'),
+      ...(meta.segment?.gaps?.length ? ['# ATENCAO: trecho com ' + meta.segment.gaps.length + ' lacuna(s) confirmada(s) pelo usuario; t_fisico supoe amostragem uniforme e NAO e valido nesses pontos. Use t_quadro_arquivo_s.'] : []),
+      'k,t_fisico_s,t_arquivo_s,t_quadro_arquivo_s,dx_px_previa,dy_px_previa,dx_px_nativo,dy_px_nativo'
     ];
+    const src = meta.segment?.sourceFrameTimes;
     for (let k = 0; k < tr.t.length; k++)
-      rows.push([k, f(tr.t[k]), f(meta.startSeconds + k / meta.samplingFps), f(tr.dx[k]), f(tr.dy[k]), f(tr.dx[k] / s), f(tr.dy[k] / s)].join(','));
+      rows.push([k, f(tr.t[k]), f(meta.startSeconds + k / meta.samplingFps), src ? f(src[k]) : '', f(tr.dx[k]), f(tr.dy[k]), f(tr.dx[k] / s), f(tr.dy[k] / s)].join(','));
     return rows.join('\n') + '\n';
   }
 

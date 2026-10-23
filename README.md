@@ -1,8 +1,16 @@
-# Vibra — protótipo experimental 0.7.1
-
-Site: https://arturbraga08.github.io/vibra/ · equipe OhmCinética · Desafio Vibracon (HackatOhm CEFET)
+# Vibra — protótipo experimental 0.7.0
 
 Aplicativo web para testar amplificação de movimento sem IA no próprio navegador. Não é um APK. A página e o worker precisam ser carregados pela rede; não há garantia de reabertura offline nesta versão. Nenhum vídeo é enviado pelo código do aplicativo.
+
+## Versão 0.8 — trecho analisado: sugestão automática × escolha manual
+
+- **Quantidade de quadros é do usuário.** "Sugerir trecho regular" mantém a quantidade e os FPS escolhidos e altera **apenas o início**. Entre os trechos que comportam essa quantidade sem lacunas, escolhe o de maior regularidade (menos quadros retidos e menor dispersão dos intervalos do arquivo); em empate, o mais próximo do início atual.
+- **Sem trecho regular compatível:** a interface explica o motivo e o tamanho do maior trecho regular, e **nenhum parâmetro é alterado**.
+- **Escolha manual:** qualquer início é aceito se o intervalo couber no vídeo. Se houver lacunas (intervalo do arquivo > 1,5 período de amostragem), aparece um aviso com a quantidade, a duração e a posição da maior lacuna, e o processamento só é liberado após a confirmação explícita "Entendo que este trecho tem lacunas…".
+- **Bloqueios mantidos:** trecho além da duração do vídeo (com o início máximo possível) e amostragem acima dos intervalos usuais do arquivo.
+- **Modo visível:** o bloco "Trecho analisado" mostra "Sugestão automática, baseada na temporização do arquivo" ou "Escolha manual"; qualquer edição de início, quadros ou FPS volta para manual.
+- **Relatório e CSV:** `segment.choice`, `temporalCheck` (`no-gaps-in-file-timing`, `gaps-confirmed-by-user` ou `not-verified-no-timing-table`), `userConfirmedGaps`, `uniformSamplingValidated`, lista de lacunas e o instante real do quadro do arquivo usado em cada amostra (`t_quadro_arquivo_s` no CSV). Nenhum quadro intermediário é criado.
+- Testes: `tests/segment.test.cjs`, mais verificação no navegador com MP4 de 120 s com lacunas em 3, 20, 51 e 90 s, e com um MP4 com lacunas a cada 3 s.
 
 ## Versão 0.7.1 — responsividade
 
@@ -79,6 +87,7 @@ node tests/probe.test.cjs
 node tests/resolution.test.cjs
 node tests/motion.test.cjs
 node tests/lambda.test.cjs
+node tests/segment.test.cjs
 ```
 
 Verifica reconstrução FFT, ganho unitário, ganho dentro da faixa, rejeição de frequência fora da faixa, máscara nula e limite de Nyquist. No caso senoidal controlado (64×64, 64 quadros, 32 Hz de amostragem, sinal de 4 Hz e amplitude de 0,25 px), ganho solicitado 5× produziu aproximadamente 4,89×. Isso não é validação geral do método.

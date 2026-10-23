@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.7.1">
+<link rel="stylesheet" href="style.css?v=0.8.0">
 </head>
 <body>
 
@@ -51,9 +51,25 @@
         </label>
         <input id="file" type="file" accept="video/*" hidden>
         <button id="demo" class="btn btn--line btn--block" type="button">Usar régua de demonstração (4 Hz)</button>
-        <button id="regular" class="btn btn--line btn--block" type="button" hidden>Escolher trecho regular</button>
         <p id="sourceInfo" class="note">Comece pela demonstração ou importe uma gravação curta e estável.</p>
         <p id="timingInfo" class="note note--mono"></p>
+
+        <fieldset class="seg-box" id="segBox">
+          <legend>Trecho analisado</legend>
+          <div class="row2">
+            <label class="field">Início (s)<input id="start" type="number" value="0" min="0" step="any" inputmode="decimal"></label>
+            <label class="field">Quadros
+              <select id="count"><option value="32">32</option><option value="64" selected>64</option><option value="128">128</option></select>
+            </label>
+          </div>
+          <div class="seg-status" id="segStatus" data-tone="idle">
+            <span class="seg-status__mode" id="segMode">Escolha manual</span>
+            <p id="segText">Defina o início e a quantidade de quadros.</p>
+          </div>
+          <button id="regular" class="btn btn--line btn--block" type="button" hidden>Sugerir trecho regular</button>
+          <p class="note" id="regularHint" hidden>A sugestão mantém a quantidade de quadros e os FPS; altera só o início.</p>
+          <label id="gapWrap" class="check check--warn" hidden><input id="gapConfirm" type="checkbox"><span>Entendo que este trecho tem lacunas e quero processá-lo mesmo assim.</span></label>
+        </fieldset>
       </section>
 
       <section class="sec" id="sec-region">
@@ -110,13 +126,9 @@
             <label class="field">Câmera lenta (×)<input id="slow" type="number" value="1" min="1" max="16" step="0.1" inputmode="decimal"></label>
           </div>
           <p class="note">Com câmera lenta de 10×, uma vibração de 10 Hz aparece a 1 Hz no vídeo. A faixa acima é sempre em Hz reais.</p>
-          <label class="field">Quadros analisados
-            <select id="count"><option value="32">32 (teste rápido)</option><option value="64" selected>64</option><option value="128">128 (trecho mais longo)</option></select>
-          </label>
           <label class="field">Resolução de cálculo
             <select id="size"><option value="64">64 px</option><option value="128">128 px (celular)</option><option value="256" selected>256 px</option><option value="512">512 px (lento)</option></select>
           </label>
-          <label class="field">Início do trecho (s)<input id="start" type="number" value="0" min="0" step="0.1" inputmode="decimal"></label>
         </details>
 
         <label id="confirmWrap" class="check" hidden><input id="confirm" type="checkbox"><span>Conferi os FPS e o fator de câmera lenta.</span></label>
@@ -249,17 +261,17 @@
 
   <footer class="foot">
     <img src="assets/ohmcinetica-logo.png" alt="OhmCinética" width="96" height="61">
-    <p>Vibra 0.7, protótipo da equipe OhmCinética para o Desafio Vibracon, HackatOhm CEFET 2026. Uso experimental, sem validação metrológica.</p>
+    <p>Vibra 0.8, protótipo da equipe OhmCinética para o Desafio Vibracon, HackatOhm CEFET 2026. Uso experimental, sem validação metrológica.</p>
   </footer>
 </main>
 
 <video id="sourceVideo" muted playsinline preload="auto" hidden></video>
-<script src="probe.js?v=0.5"></script>
+<script src="probe.js?v=0.8.0"></script>
 <script src="engine.js?v=0.6.0"></script>
 <script src="motion.js?v=0.6.0"></script>
 <script src="charts.js?v=0.7.0"></script>
 <script src="ui.js?v=0.7.0"></script>
 <script src="analysis.js?v=0.7.0"></script>
-<script src="app.js?v=0.7.0"></script>
+<script src="app.js?v=0.8.0"></script>
 </body>
 </html>
